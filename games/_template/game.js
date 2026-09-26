@@ -21,8 +21,22 @@
   window.addEventListener('resize', resize);
   resize();
 
+  // Keep the tablet's screen from dimming mid-game (HTTPS only; quietly does
+  // nothing elsewhere). Browsers drop the lock when the page is hidden, so it
+  // is re-requested on every tap.
+  let wakeLock = null;
+  async function keepScreenAwake() {
+    try {
+      if ('wakeLock' in navigator && !wakeLock) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+      }
+    } catch (e) { /* not allowed here; that's fine */ }
+  }
+
   canvas.addEventListener('pointerdown', e => {
     e.preventDefault();
+    keepScreenAwake();
     bubbles.push({
       x: e.clientX, y: e.clientY, r: 10, vy: -40 - Math.random() * 40,
       color: COLORS[Math.floor(Math.random() * COLORS.length)], life: 4,
