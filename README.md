@@ -5,7 +5,7 @@ A little collection of simple, toddler-friendly browser games, meant to be playe
 When you open it, you get a **menu of big picture tiles**, one per game. Tap a tile to play. Inside a game, **press and hold** the 🏠 button in the corner for about a second to return to the menu. The hold is there so little fingers don't exit by accident.
 
 Everything is plain HTML, CSS, and JavaScript:
-- **No build step, no npm install, no frameworks.** Any static file server can host it.
+- **No build step, no npm install, no frameworks.** Any static file server can host it. The only npm package is the test runner, and the games don't need it.
 - **No internet needed.** The games draw their art in code and generate their sounds in the browser.
 
 ## Games
@@ -56,6 +56,8 @@ index.html              The game menu (reads games/games.json)
 manifest.webmanifest    "Add to Home Screen" settings for the whole collection
 icon.svg, icon-*.png    App icon for the collection
 serve.py                Tiny LAN server that prints the tablet URL
+tests/                  Automated browser tests (see below)
+.github/workflows/      Runs the tests on every pull request
 shared/
   home-button.js        Hold-to-exit "back to menu" button used by every game
 games/
@@ -108,7 +110,33 @@ Each game is a **self-contained web page in its own folder**. Games don't share 
 
 5. **Refresh the menu.** The server sends no-cache headers, so a reload on the tablet picks up the change.
 
+6. **Run the tests** (see below). Your game is covered by the smoke tests automatically.
+
 Optionally, add a `README.md` in the game folder describing how it plays and what to tweak, and add a row to the **Games** table above.
+
+## Automated tests
+
+Every pull request, and every push to `main`, runs the test suite on GitHub Actions (`.github/workflows/test.yml`). The suite uses [Playwright](https://playwright.dev) to drive a real headless Chrome, sized like a tablet in both landscape and portrait.
+
+| Test file | What it checks |
+|---|---|
+| `tests/registry.spec.js` | `games.json` is valid: ids are unique, and each game's folder, `index.html`, and icon exist. Each page includes the shared home button and manifest. Every game folder is registered (prefix a folder with `_` to exclude it). |
+| `tests/menu.spec.js` | The menu shows one tile per visible game, in order, with icons that load. Tapping a tile opens the game. |
+| `tests/games.spec.js` | **Runs for every game automatically.** The page loads with no JS errors or missing files, the canvas draws something, 25 random taps don't crash it, a quick tap on 🏠 stays in the game, and holding it goes back to the menu. |
+| `tests/games/<id>.spec.js` | Optional checks for one game. For example, `vroom-vroom-vacuum.spec.js` has a bot play a full round: clean every mess, empty the bin at the dock, win, then start the next room. |
+
+A failed run attaches a `playwright-report` artifact to the workflow run, with screenshots and a step-by-step trace of what went wrong.
+
+**Running the tests locally** requires Node.js 18+ and Python. The tests start `serve.py` themselves.
+```
+npm install
+npx playwright install chromium     # one-time browser download
+npx playwright test                 # add --ui for an interactive runner
+```
+
+**Writing a game-specific test:** create `tests/games/<your-game-id>.spec.js`. It helps to expose a small hook from your game for the test to read, like `window.__vacuum` in the vacuum game, so the test can check the game's state directly instead of guessing from pixels. The shared helpers in `tests/helpers.js` (`trackProblems`, `canvasHasContent`, `holdHomeButton`) are there to reuse.
+
+To **block merging when tests fail**, go to repo **Settings → Branches** (or **Rules → Rulesets**), add a rule for `main`, enable *Require status checks to pass*, and pick **playwright**.
 
 ### Tips for games aimed at toddlers
 - **One input: tap or drag anywhere.** Avoid small buttons, multi-touch, or anything that needs reading.

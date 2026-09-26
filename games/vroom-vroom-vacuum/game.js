@@ -1654,6 +1654,16 @@
   newRoom();
   requestAnimationFrame(frame);
 
-  // Handy for testing from the browser console.
-  window.__vacuum = { game, vac };
+  // Hooks for the automated tests (tests/games/vroom-vroom-vacuum.spec.js) and
+  // for poking around from the browser console.
+  window.__vacuum = {
+    game,
+    vac,
+    toScreen: (x, y) => ({ x: view.ox + x * view.scale, y: view.oy + y * view.scale }),
+    world: () => ({ W, H, WALL, VAC_R, CELL }),
+    // Could the vacuum's center sit here without touching a wall or furniture?
+    canFit: (x, y) =>
+      x >= WALL + VAC_R && x <= W - WALL - VAC_R && y >= WALL + VAC_R && y <= H - WALL - VAC_R &&
+      !circleHitsFurniture(x, y, VAC_R + 2),
+  };
 })();
