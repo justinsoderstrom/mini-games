@@ -1,0 +1,12 @@
+{
+  "name": "mini-games",
+  "private": true,
+  "description": "Toddler-friendly browser games. The games need no build step; this file only exists for the automated tests.",
+  "scripts": {
+    "start": "python3 serve.py",
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}

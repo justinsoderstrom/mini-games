@@ -1,0 +1,11 @@
+{
+  "games": [
+    {
+      "id": "vroom-vroom-vacuum",
+      "title": "Vroom Vroom Vacuum",
+      "description": "Drive a little robot vacuum around the house, suck up the messes, and go home to the dock.",
+      "icon": "icon.svg",
+      "color": "#19b3a6"
+    }
+  ]
+}
