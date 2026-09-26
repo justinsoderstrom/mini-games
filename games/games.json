@@ -6,6 +6,13 @@
       "description": "Drive a little robot vacuum around the house, suck up the messes, and go home to the dock.",
       "icon": "icon.svg",
       "color": "#19b3a6"
+    },
+    {
+      "id": "mow-mow-mower",
+      "title": "Mow Mow Mower",
+      "description": "Drive a little lawn mower around the yard to cut the tall grass, then zip the weeds with the trimmer.",
+      "icon": "icon.svg",
+      "color": "#4caf50"
     }
   ]
 }

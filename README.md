@@ -18,6 +18,7 @@ Everything is plain HTML, CSS, and JavaScript:
 | Game | What it is |
 |---|---|
 | [Vroom Vroom Vacuum](https://justinsoderstrom.com/mini-games/games/vroom-vroom-vacuum/) ([code](games/vroom-vroom-vacuum/)) | Drive a robot vacuum around the house, clean up the messes, and go home to the dock. |
+| [Mow Mow Mower](https://justinsoderstrom.com/mini-games/games/mow-mow-mower/) ([code](games/mow-mow-mower/)) | Mow the tall grass in the backyard, then zip the weeds with a little trimmer. |
 
 ## Setting up the tablet
 
@@ -51,6 +52,7 @@ Notes:
 
 ```
 index.html              The game menu (reads games/games.json)
+CLAUDE.md               Guidance for Claude (and people) on the audience and how to add a game
 manifest.webmanifest    "Add to Home Screen" settings for the whole collection
 icon.svg, icon-*.png    App icon for the collection
 sw.js                   Service worker: saves everything for offline play
@@ -62,7 +64,7 @@ shared/
 games/
   games.json            The list of games shown on the menu
   _template/            Starter game to copy when making a new one
-  vroom-vroom-vacuum/   One folder per game
+  vroom-vroom-vacuum/   One folder per game (mow-mow-mower/ has the same layout)
     index.html          The game's own page (its entry point)
     game.js
     icon.svg            Its tile on the menu
