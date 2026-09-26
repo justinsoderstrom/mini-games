@@ -113,14 +113,47 @@
       padding: 2px 6px;
       border-radius: 6px;
     }
+    /* Keep the footer at the bottom of the screen, out of the way of the tiles. */
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+    footer {
+      margin-top: auto;
+      padding-top: 40px;
+      text-align: center;
+      font-family: system-ui, sans-serif;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.55);
+    }
+    footer a {
+      color: rgba(255, 255, 255, 0.8);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    footer .heart { color: #ff6b6b; }
   </style>
 </head>
 <body>
   <h1>Mini Games</h1>
   <main id="games" aria-label="Games"></main>
+  <footer>
+    Made with <span class="heart" aria-label="love">&hearts;</span> and
+    <a href="https://claude.com/claude-code" target="_blank" rel="noopener">Claude Code</a>
+    &middot;
+    <a href="https://github.com/justinsoderstrom/mini-games" target="_blank" rel="noopener">Source on GitHub</a>
+  </footer>
 
   <script>
     'use strict';
+    // Save everything for offline play. Service workers only run on HTTPS
+    // (GitHub Pages) or localhost, so a plain http:// home server skips this.
+    if ('serviceWorker' in navigator && window.isSecureContext) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
     // Reads games/games.json and draws one big tile per game.
     // To add a game, see "Adding a new game" in README.md.
     (async () => {
