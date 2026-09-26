@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serve Vroom Vroom Vacuum on your home network so a tablet can play it.
+"""Serve the Mini Games menu on your home network so a tablet can play it.
 
 Usage:  python3 serve.py [port]      (default port 8080)
 Then open the printed http://<your-pc-ip>:<port> address on the tablet.
@@ -42,7 +42,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 if __name__ == "__main__":
     server = http.server.ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
-    print(f"\n  Vroom Vroom Vacuum is running!\n")
+    print(f"\n  Mini Games is running!\n")
     print(f"  On the tablet, open:  http://{lan_ip()}:{PORT}")
     print(f"  On this computer:     http://localhost:{PORT}\n")
     print("  Press Ctrl+C to stop.\n")

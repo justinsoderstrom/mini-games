@@ -1,7 +1,8 @@
 {
-  "name": "Vroom Vroom Vacuum",
-  "short_name": "Vroom Vroom",
+  "name": "Mini Games",
+  "short_name": "Mini Games",
   "start_url": "./",
+  "scope": "./",
   "display": "fullscreen",
   "orientation": "any",
   "background_color": "#2b2d42",
