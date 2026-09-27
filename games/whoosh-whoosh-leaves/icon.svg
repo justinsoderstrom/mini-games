@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <clipPath id="tile"><rect width="512" height="512" rx="110"/></clipPath>
+    <g id="maple"><path d="M0 -40 L11 -14 L38 -12 L17 6 L24 32 L0 18 L-24 32 L-17 6 L-38 -12 L-11 -14 Z" stroke-width="10" stroke-linejoin="round"/></g>
+  </defs>
+  <g clip-path="url(#tile)">
+    <rect width="512" height="512" fill="#8cc152"/>
+    <rect x="0" y="0" width="128" height="512" fill="#82b84a"/>
+    <rect x="256" y="0" width="128" height="512" fill="#82b84a"/>
+    <rect x="0" y="0" width="512" height="120" fill="#9fd8f5"/>
+    <!-- leaf pile -->
+    <ellipse cx="400" cy="430" rx="150" ry="100" fill="#b5561f"/>
+    <ellipse cx="385" cy="410" rx="95" ry="62" fill="#d9772a"/>
+  </g>
+  <!-- whooshing leaves -->
+  <use href="#maple" transform="translate(330 150) rotate(-20) scale(1.1)" fill="#e63946" stroke="#e63946"/>
+  <use href="#maple" transform="translate(430 230) rotate(25)" fill="#ffb400" stroke="#ffb400"/>
+  <use href="#maple" transform="translate(350 280) rotate(-50) scale(0.8)" fill="#ff7b25" stroke="#ff7b25"/>
+  <use href="#maple" transform="translate(440 400) rotate(10) scale(0.9)" fill="#e63946" stroke="#e63946"/>
+  <use href="#maple" transform="translate(360 440) rotate(-30) scale(0.8)" fill="#ffd23f" stroke="#ffd23f"/>
+  <!-- air -->
+  <g fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" opacity="0.85">
+    <path d="M250 220 Q290 205 320 215"/>
+    <path d="M255 262 Q300 262 330 250"/>
+    <path d="M250 300 Q285 315 315 320"/>
+  </g>
+  <!-- blower buddy -->
+  <circle cx="148" cy="296" r="104" fill="rgba(0,0,0,0.18)"/>
+  <rect x="170" y="232" width="80" height="54" rx="20" fill="#8d99ae"/>
+  <rect x="226" y="222" width="34" height="74" rx="16" fill="#ff9f1c"/>
+  <circle cx="136" cy="270" r="96" fill="#4d96ff" stroke="#2f6fcc" stroke-width="12"/>
+  <ellipse cx="104" cy="214" rx="40" ry="20" fill="#86b8ff" transform="rotate(-25 104 214)"/>
+  <ellipse cx="116" cy="264" rx="24" ry="28" fill="#fff" stroke="#2b2d42" stroke-width="7"/>
+  <ellipse cx="174" cy="264" rx="24" ry="28" fill="#fff" stroke="#2b2d42" stroke-width="7"/>
+  <circle cx="124" cy="270" r="13" fill="#2b2d42"/>
+  <circle cx="182" cy="270" r="13" fill="#2b2d42"/>
+  <circle cx="128" cy="264" r="5" fill="#fff"/>
+  <circle cx="186" cy="264" r="5" fill="#fff"/>
+  <path d="M122 316 Q145 340 168 316" fill="none" stroke="#2b2d42" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="92" cy="306" r="11" fill="rgba(255,120,150,0.5)"/>
+  <circle cx="198" cy="306" r="11" fill="rgba(255,120,150,0.5)"/>
+</svg>

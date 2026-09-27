@@ -13,6 +13,13 @@
       "description": "Drive a little lawn mower around the yard to cut the tall grass, then zip the weeds with the trimmer.",
       "icon": "icon.svg",
       "color": "#4caf50"
+    },
+    {
+      "id": "whoosh-whoosh-leaves",
+      "title": "Whoosh Whoosh Leaves",
+      "description": "Drive a little leaf blower around the yard to whoosh the leaves into a big pile, then help a puppy jump in.",
+      "icon": "icon.svg",
+      "color": "#ff8c42"
     }
   ]
 }
