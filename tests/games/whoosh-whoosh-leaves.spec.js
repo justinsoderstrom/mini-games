@@ -1,21 +1,19 @@
 // Game-specific test: a bot plays a whole round of Whoosh Whoosh Leaves —
-// blowing every leaf onto the pile, making the puppy jump in, and winning —
-// then starts the next yard.
+// blowing every leaf onto the pile and winning — then starts the next yard.
 const { test, expect } = require('@playwright/test');
 const { trackProblems } = require('../helpers');
 
-test('a bot can blow the leaves, jump in the pile, and win', async ({ page }) => {
+test('a bot can blow every leaf onto the pile and win', async ({ page }) => {
   test.setTimeout(240_000);
   const problems = trackProblems(page);
 
   await page.goto('/games/whoosh-whoosh-leaves/');
   const readState = () => page.evaluate(() => {
-    const { game, blower, puppy, pile, nearestLeaf } = window.__leaves;
+    const { game, blower, pile, nearestLeaf } = window.__leaves;
     return {
-      state: game.state, blown: game.blown, piled: game.piled, leafTotal: game.leafTotal, jumps: game.jumps,
+      state: game.state, blown: game.blown, piled: game.piled, leafTotal: game.leafTotal,
       onGround: game.leaves.filter(l => l.state === 'ground').length,
       blower: { x: blower.x, y: blower.y },
-      puppyJumping: puppy.jumpT >= 0,
       pileR: pile.r,
       nextLeaf: nearestLeaf(blower.x, blower.y),
     };
@@ -45,20 +43,11 @@ test('a bot can blow the leaves, jump in the pile, and win', async ({ page }) =>
   expect(s.onGround).toBe(0);
   expect(s.nextLeaf).toBeNull();
 
-  // Every leaf lands on the pile, and the puppy comes to play.
-  await expect.poll(async () => (await readState()).state, { timeout: 20_000 }).toBe('jump');
+  // Every leaf lands on the pile, and that's a win.
+  await expect.poll(async () => (await readState()).state, { timeout: 20_000 }).toBe('win');
   s = await readState();
   expect(s.piled).toBe(s.leafTotal);
   expect(s.pileR).toBeGreaterThan(100);
-
-  // Tap anywhere: the puppy jumps in, once per tap.
-  for (let step = 0; step < 40 && s.state === 'jump'; step++) {
-    if (!s.puppyJumping) await page.mouse.click(width * 0.3, height * 0.6);
-    await page.waitForTimeout(300);
-    s = await readState();
-  }
-  expect(s.state, 'reached the win screen').toBe('win');
-  expect(s.jumps).toBe(3);
 
   // After the celebration, a tap starts the next yard.
   // Wait on the game's own clock, which can run slower than real time on a busy machine.
@@ -68,7 +57,6 @@ test('a bot can blow the leaves, jump in the pile, and win', async ({ page }) =>
   expect(next.state).toBe('blow');
   expect(next.blown).toBe(0);
   expect(next.onGround).toBe(next.leafTotal);
-  expect(next.jumps).toBe(0);
 
   expect(problems).toEqual([]);
 });

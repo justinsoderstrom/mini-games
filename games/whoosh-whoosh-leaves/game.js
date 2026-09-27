@@ -1,9 +1,9 @@
 'use strict';
 
 // Whoosh Whoosh Leaves — a tiny leaf-blowing game for little kids.
-// Tap (or drag) anywhere and the blower drives there, whooshing up every leaf
-// in front of it. The leaves swirl through the air onto one big pile in the
-// corner. When the lawn is clean, a puppy comes to play: tap and it jumps in!
+// Tap (or drag) anywhere and the leaf blower drives there, whooshing up every
+// leaf in front of it. The leaves swirl through the air onto one big pile in
+// the corner. Clear the whole lawn to win!
 
 (() => {
   const canvas = document.getElementById('game');
@@ -13,7 +13,6 @@
   const rand = (a, b) => a + Math.random() * (b - a);
   const pick = arr => arr[Math.floor(Math.random() * arr.length)];
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  const lerp = (a, b, t) => a + (b - a) * t;
   const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
   const angleDiff = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
 
@@ -67,7 +66,6 @@
   const AUTO_FINISH = 0.9;    // past this, the last few leaves fly to the pile by themselves
   const MILESTONES = [0.25, 0.5, 0.75, 1];
   const HINT_AFTER = 3.5;     // seconds without progress before an arrow points at what's left
-  const JUMPS = 3;            // puppy jumps into the pile this many times to win
   const FONT = '"Arial Rounded MT Bold", "Nunito", "Trebuchet MS", "Segoe UI", sans-serif';
 
   const BLOWER_COLORS = [
@@ -81,7 +79,6 @@
   const FLOWER_COLORS = ['#ff9f43', '#ffd23f', '#e63946', '#c77dff', '#ffffff'];
   const CONFETTI = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#c77dff', '#ff9f43'];
 
-  const NUMBERS = ['', 'One!', 'Two!', 'Three!', 'Four!', 'Five!'];
   const CHEERS = { 0.25: 'Whoosh!', 0.5: 'Keep going!', 0.75: 'Almost done!' };
 
   // ---------- sound (all synthesized, no files) ----------
@@ -188,7 +185,6 @@
     plop()  { this.tone(rand(700, 1000), 0.08, { type: 'triangle', to: rand(400, 500), vol: 0.07 }); },
     boing(delay = 0) { this.tone(rand(260, 320), 0.22, { to: rand(620, 720), vol: 0.3, delay }); },
     bump()  { this.tone(170, 0.16, { type: 'triangle', to: 80, vol: 0.45 }); },
-    arf()   { [0, 0.16].forEach(d => this.tone(620, 0.09, { type: 'square', to: 380, vol: 0.06, delay: d })); },
     crunch() { this.hiss(0.5, 3500, 900, 0.4); this.hiss(0.35, 1800, 700, 0.25, 0.08); },
     chime() { [659, 988].forEach((f, i) => this.tone(f, 0.35, { type: 'triangle', vol: 0.25, delay: i * 0.12 })); },
     tada()  { [523, 659, 784].forEach((f, i) => this.tone(f, 0.3, { type: 'triangle', vol: 0.25, delay: i * 0.12 })); },
@@ -307,7 +303,7 @@
   const lawn = { x: 0, y: 0, w: 0, h: 0 };
   const pile = { x: 0, y: 0, r: PILE_MIN_R, leaves: [], wobble: 0 };
 
-  // state: title -> blow -> gather (leaves land, puppy comes) -> jump -> win
+  // state: title -> blow -> gather (the last leaves land on the pile) -> win
   const game = {
     state: 'title',
     level: 1,
@@ -323,7 +319,6 @@
     fracShown: 0,
     milestone: 0,   // how many MILESTONES have been reached
     starPop: 0,
-    jumps: 0,
     idleT: 0,
     phaseT: 0,
     winT: 0,
@@ -336,11 +331,6 @@
     x: 0, y: 0, vx: 0, vy: 0, heading: -Math.PI / 2,
     tx: null, ty: null, speed: 0, stuckT: 0,
     blink: 0, blinkT: 2, squish: 0,
-  };
-
-  const puppy = {
-    shown: 0, x: 0, y: 0, homeX: 0, homeY: 0, z: 0,
-    jumpT: -1, queued: false, inPile: false, blink: 0, blinkT: 2,
   };
 
   function resize() {
@@ -450,7 +440,6 @@
     game.fracShown = 0;
     game.milestone = 0;
     game.starPop = 0;
-    game.jumps = 0;
     game.idleT = 0;
     game.phaseT = 0;
     game.winT = 0;
@@ -461,7 +450,6 @@
     });
     // Don't start on top of a tree.
     collide(blower);
-    Object.assign(puppy, { shown: 0, z: 0, jumpT: -1, queued: false, inPile: false });
 
     game.leaves = scatterLeaves();
     game.leafTotal = game.leaves.length;
@@ -590,12 +578,6 @@
         newYard();
         startBlowing();
       }
-      return;
-    }
-    if (game.state === 'jump') {
-      // Tap anywhere and the puppy jumps in. Mashing just lines up one more jump.
-      if (puppy.jumpT < 0) startJump();
-      else puppy.queued = true;
       return;
     }
     pointerDown = true;
@@ -733,8 +715,8 @@
   function inWind(l, extra = 0) {
     if (dist(l.x, l.y, blower.x, blower.y) < GRAB_R + extra) return true;
     const dx = Math.cos(blower.heading), dy = Math.sin(blower.heading);
-    const nx = blower.x + dx * 70, ny = blower.y + dy * 70; // nozzle tip
-    const rx = l.x - nx, ry = l.y - ny;
+    const tip = nozzleTip();
+    const rx = l.x - tip.x, ry = l.y - tip.y;
     const along = rx * dx + ry * dy;
     if (along < -20 || along > WIND_LEN + extra) return false;
     return Math.abs(rx * -dy + ry * dx) < WIND_W + extra + Math.max(0, along) * 0.45;
@@ -780,8 +762,9 @@
     if (Math.random() < 0.8) {
       const s = rand(420, 600), spread = rand(-0.35, 0.35);
       const a = blower.heading + spread;
+      const tip = nozzleTip();
       game.particles.push({
-        kind: 'air', x: blower.x + dx * 72, y: blower.y + dy * 72,
+        kind: 'air', x: tip.x, y: tip.y,
         vx: Math.cos(a) * s + blower.vx, vy: Math.sin(a) * s + blower.vy, drag: 3,
         life: 0.35, max: 0.35, size: rand(18, 30), rot: a,
       });
@@ -812,16 +795,8 @@
     game.phaseT = 0;
     game.idleT = 0;
     pointerDown = false;
-    // Park the blower off to the side, out of the puppy's way.
-    const toMid = Math.atan2(lawn.y + lawn.h / 2 - pile.y, lawn.x + lawn.w / 2 - pile.x);
-    blower.tx = pile.x + Math.cos(toMid + 0.8) * (PILE_MAX_R + 240);
-    blower.ty = pile.y + Math.sin(toMid + 0.8) * (PILE_MAX_R + 240);
-    blower.tx = clamp(blower.tx, lawn.x + BLOWER_R, lawn.x + lawn.w - BLOWER_R);
-    blower.ty = clamp(blower.ty, lawn.y + BLOWER_R, lawn.y + lawn.h - BLOWER_R);
-    puppy.homeX = pile.x + Math.cos(toMid - 0.3) * (PILE_MAX_R + 70);
-    puppy.homeY = pile.y + Math.sin(toMid - 0.3) * (PILE_MAX_R + 70);
     Sound.tada();
-    Voice.say('All clean! What a big pile!');
+    Voice.say('All clean!');
   }
 
   function updateLeaves(dt) {
@@ -850,85 +825,25 @@
     pile.wobble = Math.max(0, pile.wobble - dt * 2);
   }
 
-  // ---------- simulation: puppy and the big jump ----------
-  const JUMP_IN = 0.5, JUMP_HIDE = 1.1, JUMP_OUT = 1.6;
-
+  // ---------- simulation: finishing up ----------
   function updateGather(dt) {
     game.phaseT += dt;
     drive(blower, BLOWER_SPEED, dt);
-    const landed = game.leaves.every(l => l.state === 'piled');
-    if (landed && game.phaseT > 1.2 && !puppy.shown) {
-      puppy.shown = 0.001;
-      puppy.x = puppy.homeX;
-      puppy.y = puppy.homeY;
-      Sound.arf();
-      sparkle(puppy.x, puppy.y - 40);
-      Voice.say('A puppy! Tap to jump in the leaves!');
-    }
-    if (puppy.shown >= 1) {
-      game.state = 'jump';
-      game.idleT = 0;
-      blower.tx = blower.ty = null;
-    }
+    if (game.phaseT > 0.8 && game.leaves.every(l => l.state === 'piled')) win();
   }
 
-  function startJump() {
-    puppy.jumpT = 0;
-    puppy.queued = false;
-    game.idleT = 0;
-    Sound.boing();
-  }
-
-  function splash(big) {
+  // Leaves burst up out of the pile and float back down.
+  function splash() {
     pile.wobble = 1;
     Sound.crunch();
-    const n = big ? 70 : 40;
-    for (let i = 0; i < n; i++) {
-      const a = rand(0, Math.PI * 2), s = rand(60, big ? 420 : 300);
+    for (let i = 0; i < 70; i++) {
+      const a = rand(0, Math.PI * 2), s = rand(60, 420);
       game.particles.push({
         kind: 'leaf', x: pile.x + rand(-30, 30), y: pile.y + rand(-20, 20), z: 10,
-        vx: Math.cos(a) * s, vy: Math.sin(a) * s * 0.7, vz: rand(350, big ? 900 : 700), drag: 1.2,
+        vx: Math.cos(a) * s, vy: Math.sin(a) * s * 0.7, vz: rand(350, 900), drag: 1.2,
         life: rand(2.2, 3), max: 3, size: LEAF_SIZE * rand(0.8, 1.1), sprite: randomSprite(),
         rot: rand(0, 6), vr: rand(-8, 8),
       });
-    }
-  }
-
-  function updatePuppy(dt) {
-    if (puppy.shown > 0) puppy.shown = Math.min(1, puppy.shown + dt * 3);
-    puppy.blinkT -= dt;
-    if (puppy.blinkT < 0) { puppy.blink = 0.14; puppy.blinkT = rand(2, 5); }
-    puppy.blink = Math.max(0, puppy.blink - dt);
-    if (puppy.jumpT < 0) return;
-
-    const before = puppy.jumpT;
-    puppy.jumpT += dt;
-    const t = puppy.jumpT;
-    if (t < JUMP_IN) {
-      const u = t / JUMP_IN;
-      puppy.x = lerp(puppy.homeX, pile.x, u);
-      puppy.y = lerp(puppy.homeY, pile.y, u);
-      puppy.z = Math.sin(u * Math.PI) * 170;
-    } else if (t < JUMP_HIDE) {
-      if (before < JUMP_IN) {
-        game.jumps++;
-        game.starPop = 1;
-        splash(false);
-        Voice.say(NUMBERS[game.jumps] || 'Wheee!');
-      }
-      puppy.inPile = true;
-      puppy.x = pile.x; puppy.y = pile.y; puppy.z = 0;
-    } else if (t < JUMP_OUT) {
-      puppy.inPile = false;
-      const u = (t - JUMP_HIDE) / (JUMP_OUT - JUMP_HIDE);
-      puppy.x = lerp(pile.x, puppy.homeX, u);
-      puppy.y = lerp(pile.y, puppy.homeY, u);
-      puppy.z = Math.sin(u * Math.PI) * 120;
-    } else {
-      puppy.jumpT = -1;
-      puppy.x = puppy.homeX; puppy.y = puppy.homeY; puppy.z = 0;
-      if (game.jumps >= JUMPS) win();
-      else if (puppy.queued) startJump();
     }
   }
 
@@ -936,8 +851,8 @@
     game.state = 'win';
     game.winT = 0;
     Sound.win();
-    splash(true);
-    Voice.say('Hooray! What a fun leaf pile!');
+    splash();
+    Voice.say('Hooray! What a big leaf pile!');
     for (let i = 0; i < 160; i++) {
       game.particles.push({
         kind: 'confetti', x: rand(0, W), y: rand(-H * 0.2, H * 0.3),
@@ -990,13 +905,12 @@
     game.rustleCooldown -= dt;
     game.plopCooldown -= dt;
     game.starPop = Math.max(0, game.starPop - dt * 3);
-    if (game.state === 'blow' || game.state === 'jump') game.idleT += dt;
+    if (game.state === 'blow') game.idleT += dt;
 
     if (game.state === 'blow') updateBlowing(dt);
     else if (game.state === 'gather') updateGather(dt);
     else if (game.state === 'win') game.winT += dt;
     updateLeaves(dt);
-    updatePuppy(dt);
     updateParticles(dt);
 
     const frac = game.leafTotal ? game.blown / game.leafTotal : 0;
@@ -1013,9 +927,6 @@
 
   // ---------- hints ----------
   function hintTarget() {
-    if (game.state === 'jump') {
-      return game.idleT > 2.5 && puppy.jumpT < 0 ? { x: pile.x, y: pile.y - pile.r * 0.5 } : null;
-    }
     if (game.state === 'blow' && game.idleT >= HINT_AFTER) return nearestLeaf(blower.x, blower.y);
     return null;
   }
@@ -1077,22 +988,16 @@
     }
   }
 
-  // ---------- drawing: blower & puppy ----------
-  function drawEyes(v, ex, spread, r) {
-    const open = v.blink > 0 ? 0.15 : 1;
-    for (const s of [-1, 1]) {
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath(); ctx.ellipse(ex, s * spread, r, r * 1.15 * open, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = '#2b2d42';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-      if (open > 0.5) {
-        ctx.fillStyle = '#2b2d42';
-        circle(ctx, ex + r * 0.35, s * spread, r * 0.55); ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        circle(ctx, ex + r * 0.5, s * spread - r * 0.25, r * 0.2); ctx.fill();
-      }
-    }
+  // ---------- drawing: leaf blower ----------
+  // The blower is drawn from the side (tube in front, handle on top), and
+  // flipped when it heads left so it never ends up upside down.
+  const blowerFlip = () => (Math.cos(blower.heading) < 0 ? -1 : 1);
+  const NOZZLE = { x: 116, y: 14 }; // where the air comes out, in the blower's own drawing
+
+  function nozzleTip() {
+    const ch = Math.cos(blower.heading), sh = Math.sin(blower.heading);
+    const lx = NOZZLE.x, ly = NOZZLE.y * blowerFlip();
+    return { x: blower.x + lx * ch - ly * sh, y: blower.y + lx * sh + ly * ch };
   }
 
   function drawBlower() {
@@ -1105,131 +1010,88 @@
     ctx.translate(v.x + jig, v.y + bob);
     ctx.rotate(v.heading);
     const sq = 1 + v.squish * 0.08;
-    ctx.scale(1 / sq, sq);
+    ctx.scale(1 / sq, sq * blowerFlip());
 
     // shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    circle(ctx, 8, 10, 48); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.beginPath(); ctx.ellipse(28, 34, 88, 16, 0, 0, Math.PI * 2); ctx.fill();
 
-    // wheels
-    ctx.fillStyle = '#2b2d42';
-    for (const wx of [-22, 22]) for (const wy of [-42, 42]) { roundRect(ctx, wx - 13, wy - 8, 26, 16, 6); ctx.fill(); }
-
-    // nozzle: a short, fat tube with a bright tip
-    ctx.fillStyle = '#8d99ae';
-    roundRect(ctx, 20, -15, 50, 30, 12); ctx.fill();
+    // long blower tube, a little narrower at the end
+    ctx.beginPath();
+    ctx.moveTo(8, -2); ctx.lineTo(NOZZLE.x - 6, 6);
+    ctx.lineTo(NOZZLE.x - 6, 22); ctx.lineTo(8, 30);
+    ctx.closePath();
+    ctx.fillStyle = '#e4e8ee';
+    ctx.fill();
+    ctx.strokeStyle = '#8d99ae';
+    ctx.lineWidth = 4;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    ctx.fillStyle = c.main;
+    ctx.fillRect(52, 1.5, 12, 25);
+    // bright tip
     ctx.fillStyle = '#ff9f1c';
-    roundRect(ctx, 58, -19, 18, 38, 9); ctx.fill();
-    ctx.fillStyle = '#5c677d';
-    ctx.beginPath(); ctx.ellipse(74, 0, 5, 13, 0, 0, Math.PI * 2); ctx.fill();
+    roundRect(ctx, NOZZLE.x - 14, 2, 16, 24, 6); ctx.fill();
+    ctx.fillStyle = '#2b2d42';
+    ctx.beginPath(); ctx.ellipse(NOZZLE.x + 1, NOZZLE.y, 3.5, 8, 0, 0, Math.PI * 2); ctx.fill();
 
-    // round body
-    circle(ctx, 0, 0, 44);
+    // handle on top, with an orange trigger
+    ctx.strokeStyle = '#2b2d42';
+    ctx.lineWidth = 11;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-40, -20); ctx.lineTo(-34, -50); ctx.lineTo(0, -50); ctx.lineTo(6, -20);
+    ctx.stroke();
+    ctx.fillStyle = '#ff9f1c';
+    roundRect(ctx, -12, -46, 10, 16, 4); ctx.fill();
+
+    // motor body
+    roundRect(ctx, -62, -26, 86, 60, 26);
     ctx.fillStyle = c.main;
     ctx.fill();
     ctx.strokeStyle = c.dark;
     ctx.lineWidth = 5;
     ctx.stroke();
     ctx.fillStyle = c.light;
-    ctx.beginPath(); ctx.ellipse(-12, -20, 20, 10, -0.4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-30, -14, 22, 6, 0, 0, Math.PI * 2); ctx.fill();
 
-    // fan grille at the back
+    // big round air intake on the side, fan spinning inside
     ctx.fillStyle = '#5c677d';
-    circle(ctx, -24, 0, 15); ctx.fill();
+    circle(ctx, -38, 6, 18); ctx.fill();
+    ctx.strokeStyle = '#2b2d42';
+    ctx.lineWidth = 3;
+    ctx.stroke();
     ctx.save();
-    ctx.translate(-24, 0);
+    ctx.translate(-38, 6);
     ctx.rotate(game.time * (running ? 30 : 2));
     ctx.fillStyle = '#c0c8d4';
-    for (let k = 0; k < 3; k++) {
-      ctx.rotate((Math.PI * 2) / 3);
-      ctx.beginPath(); ctx.ellipse(6, 0, 7, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+    for (let k = 0; k < 4; k++) {
+      ctx.rotate(Math.PI / 2);
+      ctx.beginPath(); ctx.ellipse(8, 0, 8, 3.5, 0, 0, Math.PI * 2); ctx.fill();
     }
     ctx.restore();
 
-    drawEyes(v, 12, 16, 11);
-    ctx.fillStyle = 'rgba(255,120,150,0.45)';
-    circle(ctx, 4, -30, 6); ctx.fill();
-    circle(ctx, 4, 30, 6); ctx.fill();
-    ctx.strokeStyle = '#2b2d42';
-    ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.arc(24, 0, 8, -Math.PI / 2 + 0.3, Math.PI / 2 - 0.3); ctx.stroke();
-    ctx.restore();
-  }
-
-  // A floppy-eared puppy, drawn facing us.
-  function drawPuppy() {
-    if (!puppy.shown) return;
-    const pop = puppy.shown < 1 ? Math.sin(puppy.shown * Math.PI * 0.85) * 1.2 : 1;
-    const happy = game.state === 'win';
-    const hop = happy ? Math.abs(Math.sin(game.winT * 7)) * 24 : 0;
-    const wag = Math.sin(game.time * (happy || puppy.jumpT >= 0 ? 22 : 10)) * 0.5;
-    const x = puppy.x, y = puppy.y;
-
-    if (puppy.inPile) {
-      // Just the ears and a waggly tail poke out of the leaves.
-      const wig = Math.sin(game.time * 18) * 6;
-      ctx.fillStyle = '#8b5a2b';
-      ctx.beginPath(); ctx.ellipse(x - 22 + wig, y - pile.r * 0.35, 10, 20, -0.4, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(x + 22 + wig, y - pile.r * 0.35, 10, 20, 0.4, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = '#d9a066';
-      ctx.lineWidth = 9;
-      ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(x + 30, y + pile.r * 0.2); ctx.lineTo(x + 46 + wig * 2, y + pile.r * 0.2 - 26); ctx.stroke();
-      return;
-    }
-
-    // shadow stays on the ground
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.beginPath(); ctx.ellipse(x, y + 30, 42 * pop, 14 * pop, 0, 0, Math.PI * 2); ctx.fill();
-
-    ctx.save();
-    ctx.translate(x, y - puppy.z - hop);
-    ctx.scale(pop, pop);
-    // tail
-    ctx.save();
-    ctx.translate(26, 8);
-    ctx.rotate(-0.8 + wag);
-    ctx.strokeStyle = '#d9a066';
-    ctx.lineWidth = 10;
-    ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -32); ctx.stroke();
-    ctx.restore();
-    // body and paws
-    ctx.fillStyle = '#d9a066';
-    ctx.beginPath(); ctx.ellipse(0, 10, 32, 26, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#f3dcc0';
-    ctx.beginPath(); ctx.ellipse(0, 16, 18, 16, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#d9a066';
-    for (const s of [-1, 1]) { ctx.beginPath(); ctx.ellipse(s * 14, 32, 11, 8, 0, 0, Math.PI * 2); ctx.fill(); }
-    // head
-    ctx.translate(0, -28);
-    ctx.fillStyle = '#8b5a2b';
-    for (const s of [-1, 1]) {
-      ctx.beginPath(); ctx.ellipse(s * 28, 6 + (puppy.z > 20 ? -10 : 0), 11, 22, s * (puppy.z > 20 ? 0.9 : 0.3), 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.fillStyle = '#d9a066';
-    circle(ctx, 0, 0, 30); ctx.fill();
-    ctx.fillStyle = '#f3dcc0';
-    ctx.beginPath(); ctx.ellipse(0, 12, 17, 13, 0, 0, Math.PI * 2); ctx.fill();
-    // eyes
-    const open = puppy.blink > 0 ? 0.15 : 1;
-    for (const s of [-1, 1]) {
-      ctx.fillStyle = '#2b2d42';
-      ctx.beginPath(); ctx.ellipse(s * 11, -6, 5.5, 6.5 * open, 0, 0, Math.PI * 2); ctx.fill();
+    // face on the front of the motor
+    const open = v.blink > 0 ? 0.15 : 1;
+    for (const ex of [-8, 10]) {
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.ellipse(ex, -4, 8, 9.5 * open, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#2b2d42';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
       if (open > 0.5) {
+        ctx.fillStyle = '#2b2d42';
+        circle(ctx, ex + 2.5, -3, 4.5); ctx.fill();
         ctx.fillStyle = '#ffffff';
-        circle(ctx, s * 11 + 2, -8, 2); ctx.fill();
+        circle(ctx, ex + 3.5, -5, 1.6); ctx.fill();
       }
     }
-    // nose, smile and tongue
-    ctx.fillStyle = '#2b2d42';
-    ctx.beginPath(); ctx.ellipse(0, 6, 6, 4.5, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#ff7a9c';
-    ctx.beginPath(); ctx.ellipse(0, 20, 5, 7, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,120,150,0.5)';
+    circle(ctx, -14, 12, 5); ctx.fill();
+    circle(ctx, 17, 12, 5); ctx.fill();
     ctx.strokeStyle = '#2b2d42';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.arc(-5, 11, 5, 0.2, Math.PI - 0.2); ctx.stroke();
-    ctx.beginPath(); ctx.arc(5, 11, 5, 0.2, Math.PI - 0.2); ctx.stroke();
+    ctx.lineWidth = 3.5;
+    ctx.beginPath(); ctx.arc(2, 10, 7, 0.3, Math.PI - 0.3); ctx.stroke();
     ctx.restore();
   }
 
@@ -1313,34 +1175,6 @@
       ctx.lineWidth = 2.5 * hs;
       ctx.stroke();
     });
-  }
-
-  function drawJumpStars(hs) {
-    const n = JUMPS;
-    const size = 40 * hs;
-    const gap = size * 0.25;
-    const totalW = n * size + (n - 1) * gap;
-    const x0 = (view.w - totalW) / 2;
-    const y = 18 * hs + size / 2 + 4 * hs;
-    ctx.fillStyle = 'rgba(0,0,0,0.28)';
-    roundRect(ctx, x0 - 14 * hs, y - size / 2 - 10 * hs, totalW + 28 * hs, size + 20 * hs, (size + 20 * hs) / 2); ctx.fill();
-    for (let i = 0; i < n; i++) {
-      const cx = x0 + i * (size + gap) + size / 2;
-      const done = i < game.jumps;
-      const pop = done && i === game.jumps - 1 ? 1 + game.starPop * 0.6 : 1;
-      starPath(ctx, cx, y, (size / 2) * pop);
-      if (done) {
-        ctx.fillStyle = '#ffd23f';
-        ctx.fill();
-        ctx.strokeStyle = '#e0a800';
-        ctx.lineWidth = 2 * hs;
-        ctx.stroke();
-      } else {
-        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-        ctx.lineWidth = 2.5 * hs;
-        ctx.stroke();
-      }
-    }
   }
 
   function bigText(text, x, y, size, fill = '#ffffff') {
@@ -1443,15 +1277,13 @@
     drawPile();
     for (const t of game.trees) drawTree(t);
     drawBlower();
-    drawPuppy();
     drawFlyingLeaves();
     drawParticles();
     drawHintArrow();
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const hs = hudScale();
-    if (game.state === 'blow' || game.state === 'gather') drawLeafBar(hs);
-    else if (game.state !== 'title') drawJumpStars(hs);
+    if (game.state !== 'title') drawLeafBar(hs);
     if (game.state === 'title') drawTitle(hs);
     if (game.state === 'win') drawWin(hs);
   }
@@ -1474,7 +1306,6 @@
   window.__leaves = {
     game,
     blower,
-    puppy,
     pile,
     lawn,
     toScreen: (x, y) => ({ x: view.ox + x * view.scale, y: view.oy + y * view.scale }),
