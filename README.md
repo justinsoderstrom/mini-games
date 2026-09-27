@@ -19,6 +19,7 @@ Everything is plain HTML, CSS, and JavaScript:
 |---|---|
 | [Vroom Vroom Vacuum](https://justinsoderstrom.com/mini-games/games/vroom-vroom-vacuum/) ([code](games/vroom-vroom-vacuum/)) | Drive a robot vacuum around the house, clean up the messes, and go home to the dock. |
 | [Mow Mow Mower](https://justinsoderstrom.com/mini-games/games/mow-mow-mower/) ([code](games/mow-mow-mower/)) | Mow the tall grass in the backyard, then zip the weeds with a little trimmer. |
+| [Whoosh Whoosh Leaves](https://justinsoderstrom.com/mini-games/games/whoosh-whoosh-leaves/) ([code](games/whoosh-whoosh-leaves/)) | Whoosh the autumn leaves into one big pile with a little leaf blower. |
 
 ## Setting up the tablet
 
