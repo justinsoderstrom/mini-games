@@ -56,13 +56,13 @@
   const EDGE = 70;            // flower beds along the sides and bottom
   const FENCE = 120;          // hedge and picket fence along the top
   const MOWER_R = 56;         // how close the mower can get to the fence or a tree
-  const MOW_R = 74;           // how wide a strip it cuts (wider than the mower, so edges and corners get done)
-  const MOWER_SPEED = 420;
+  const MOW_R = 84;           // how wide a strip it cuts (wider than the mower, so edges and corners get done)
+  const MOWER_SPEED = 520;
   const TRIMMER_R = 40;
   const TRIMMER_SPEED = 470;
   const TRIM_REACH = 34;      // extra distance at which the trimmer snips a weed
   const CELL = 20;            // grass is tracked on a grid of CELL x CELL squares
-  const AUTO_FINISH = 0.94;   // past this, the last few blades mow themselves; nobody hunts for pixels
+  const AUTO_FINISH = 0.92;   // past this, the last few blades mow themselves; nobody hunts for pixels
   const MILESTONES = [0.25, 0.5, 0.75, 1];
   const HINT_AFTER = 3.5;     // seconds without progress before an arrow points at what's left
   const FONT = '"Arial Rounded MT Bold", "Nunito", "Trebuchet MS", "Segoe UI", sans-serif';
